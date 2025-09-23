@@ -1,150 +1,158 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ルーレット</title>
-  <style>
-    body {
-      text-align: center;
-      font-family: sans-serif;
-      margin-top: 50px;
-    }
-    canvas {
-      border: 2px solid #333;
-      border-radius: 50%;
-    }
-    .buttons {
-      margin-top: 30px;
-    }
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-    }
-    #start {
-      background-color: #4CAF50;
-      color: white;
-    }
-    #reset {
-      background-color: #f44336;
-      color: white;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>ルーレット</title>
+<style>
+body { margin:0; font-family:sans-serif; background:#f0f0f0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; }
+h1 { font-size:2rem; margin:20px 0; text-align:center; }
+.main { display:flex; justify-content:center; align-items:flex-start; gap:40px; flex-wrap:wrap; width:100%; }
+.result-boxes { display:flex; flex-direction:column; gap:20px; flex-shrink:0; }
+.result-box { width:220px; font-size:1.3rem; padding:20px; background:#fff; border:2px solid #ccc; border-radius:10px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+.wheel-container { position:relative; width:90vw; max-width:450px; height:90vw; max-height:450px; flex-shrink:0; border:2px solid #333; border-radius:50%; }
+.pointer { position:absolute; top:-20px; left:50%; transform:translateX(-50%) rotate(180deg); font-size:1.5rem; color:#e53935; z-index:10; }
+svg { width:100%; height:100%; border-radius:50%; transform:rotate(0deg); transition: transform 3s cubic-bezier(0.25,0.8,0.25,1); }
+path { stroke-width:2; stroke:#333; }
+.controls { display:flex; flex-direction:column; gap:10px; margin-top:15px; align-items:center; }
+button { padding:10px 25px; font-size:1.2rem; background-color:#4caf50; color:white; border:none; border-radius:8px; cursor:pointer; }
+button:disabled { background-color:#aaa; cursor:not-allowed; }
+</style>
 </head>
 <body>
-  <h1>ルーレット</h1>
-  <canvas id="roulette" width="500" height="500"></canvas>
-  <div class="buttons">
-    <button id="start">スタート</button>
-    <button id="reset">リセット</button>
+<h1>漫才コンビ決めルーレット</h1>
+<div class="main">
+  <div class="result-boxes">
+    <div class="result-box" id="result1">1人目の結果</div>
+    <div class="result-box" id="result2">2人目の結果</div>
   </div>
 
-  <script>
-    const canvas = document.getElementById("roulette");
-    const ctx = canvas.getContext("2d");
-    const startBtn = document.getElementById("start");
-    const resetBtn = document.getElementById("reset");
+  <div class="wheel-container">
+    <div class="pointer">▲</div>
+    <svg id="wheel" viewBox="0 0 400 400">
+      <circle cx="200" cy="200" r="200" fill="none" stroke="#333" stroke-width="2"/>
+      <g id="segments"></g>
+    </svg>
+    <div class="controls">
+      <button id="spinButton1">1人目を決める！</button>
+      <button id="spinButton2" disabled>2人目を決める！</button>
+      <button id="resetButton">リセット</button>
+    </div>
+  </div>
+</div>
 
-    // キャラ名
-    const names = ["A", "B", "C", "D", "E", "雨夜燕"];
-    const colors = [];
+<audio id="gongSound" src="教会の鐘1.mp3" preload="auto"></audio>
 
-    // ランダム色生成
-    function randomColor() {
-      const r = Math.floor(Math.random() * 200);
-      const g = Math.floor(Math.random() * 200);
-      const b = Math.floor(Math.random() * 200);
-      return `rgb(${r},${g},${b})`;
-    }
+<script>
+const outcomes=[
+"茅森月歌","和泉ユキ","逢川めぐみ","東城つかさ","朝倉可憐","國見タマ",
+"蒼井えりか","水瀬いちご","水瀬すもも","樋口聖華","柊木梢",
+"山脇・ボン・イヴァール","桜庭星羅","天音巫呼","豊後弥生","神崎アーデルハイド","佐月マリ",
+"白河ユイナ","月城最中","桐生美也","菅原千恵","小笠原緋雨","蔵里見",
+"二階堂三郷","石井色葉","命吹雪","室伏理沙","伊達朱里","瑞原あいな",
+"大島一千子","大島二以奈","大島三野里","大島四ツ葉","大島五十鈴","大島六宇亜",
+"柳美音","丸山奏多","華村詩紀","松岡チロル","夏目祈","黒沢真希",
+"キャロル・リーパー","李映夏","アイリーン・レドメイン","ヴリティカ・バラクリシュナン",
+"マリア・デ・アンジェリス","シャルロッタ・スコポフスカヤ",
+"手塚咲","七瀬七海","浅見真紀子"
+];
 
-    // 色を割り当て
-    names.forEach(() => {
-      colors.push(randomColor());
-    });
+const segmentAngle=360/outcomes.length;
+const segments=document.getElementById('segments');
+const wheel=document.getElementById('wheel');
+const button1=document.getElementById('spinButton1');
+const button2=document.getElementById('spinButton2');
+const resetButton=document.getElementById('resetButton');
+const result1=document.getElementById('result1');
+const result2=document.getElementById('result2');
+let currentRotation=0;
 
-    const total = names.length;
-    const arc = (2 * Math.PI) / total;
+function getSecureRandom360(){
+  const array=new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0]/0xFFFFFFFF*360;
+}
 
-    let currentAngle = 0; // 前回の止まった角度を保持
-    let spinning = false;
+function randomColor(){
+  const r=Math.floor(Math.random()*256);
+  const g=Math.floor(Math.random()*256);
+  const b=Math.floor(Math.random()*256);
+  return `rgb(${r},${g},${b})`;
+}
 
-    function drawRoulette() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const radius = canvas.width / 2;
-      for (let i = 0; i < total; i++) {
-        const start = i * arc + currentAngle;
-        const end = start + arc;
-        ctx.beginPath();
-        ctx.moveTo(radius, radius);
-        ctx.arc(radius, radius, radius, start, end);
-        ctx.fillStyle = colors[i];
-        ctx.fill();
-        ctx.stroke();
+const radius=200;
+const textRadius=120;
 
-        // テキスト
-        ctx.save();
-        ctx.translate(radius, radius);
-        ctx.rotate(start + arc / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "white";
-        ctx.font = "20px sans-serif";
-        ctx.fillText(names[i], radius - 10, 10);
-        ctx.restore();
-      }
+outcomes.forEach((name,index)=>{
+  const startAngle=segmentAngle*index;
+  const endAngle=startAngle+segmentAngle;
+  const x1=200+radius*Math.cos((startAngle-90)*Math.PI/180);
+  const y1=200+radius*Math.sin((startAngle-90)*Math.PI/180);
+  const x2=200+radius*Math.cos((endAngle-90)*Math.PI/180);
+  const y2=200+radius*Math.sin((endAngle-90)*Math.PI/180);
+  const color=randomColor();
 
-      // 矢印
-      ctx.fillStyle = "black";
-      ctx.beginPath();
-      ctx.moveTo(radius - 20, 0);
-      ctx.lineTo(radius + 20, 0);
-      ctx.lineTo(radius, 40);
-      ctx.closePath();
-      ctx.fill();
-    }
+  const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d", `M200,200 L${x1},${y1} A${radius},${radius} 0 0,1 ${x2},${y2} Z`);
+  path.setAttribute("fill",color);
+  path.setAttribute("stroke","#333");
+  path.setAttribute("stroke-width","2");
+  segments.appendChild(path);
 
-    function spinRoulette() {
-      if (spinning) return;
-      spinning = true;
-      let spinAngle = Math.random() * Math.PI * 4 + Math.PI * 4; // 4回転以上
-      let duration = 3000; // 3秒
-      let start = Date.now();
+  const textAngle=(startAngle+endAngle)/2-90;
+  const textX=200+textRadius*Math.cos(textAngle*Math.PI/180);
+  const textY=200+textRadius*Math.sin(textAngle*Math.PI/180);
 
-      function animate() {
-        let now = Date.now();
-        let elapsed = now - start;
-        if (elapsed < duration) {
-          let progress = elapsed / duration;
-          let easeOut = 1 - Math.pow(1 - progress, 3);
-          currentAngle += (spinAngle * easeOut - currentAngle) * 0.1;
-          drawRoulette();
-          requestAnimationFrame(animate);
-        } else {
-          currentAngle += spinAngle;
-          currentAngle %= 2 * Math.PI;
-          drawRoulette();
-          spinning = false;
+  const text=document.createElementNS("http://www.w3.org/2000/svg","text");
+  text.setAttribute("x",textX);
+  text.setAttribute("y",textY);
+  text.setAttribute("font-size","10");
+  text.setAttribute("text-anchor","middle");
+  text.setAttribute("alignment-baseline","middle");
+  text.setAttribute("fill","#000");
+  text.textContent=name;
+  text.setAttribute("transform", `rotate(${textAngle},${textX},${textY})`);
+  segments.appendChild(text);
+});
 
-          // 当選判定
-          let index = Math.floor(((2 * Math.PI - currentAngle) % (2 * Math.PI)) / arc);
-          alert("当たり: " + names[index]);
-        }
-      }
-      animate();
-    }
+function spinWheel(callback){
+  const spin=360*5+getSecureRandom360();
+  currentRotation+=spin;
+  wheel.style.transition='transform 3s cubic-bezier(0.25,0.8,0.25,1)';
+  wheel.style.transform = `rotate(${currentRotation}deg)`;
+  
+  setTimeout(()=>{
+    const selectedIndex=Math.floor((360-(currentRotation%360))/segmentAngle)%outcomes.length;
+    const gong=document.getElementById('gongSound');
+    gong.currentTime=0;
+    gong.play().catch(e => console.log("音再生エラー:", e));
+    callback(outcomes[selectedIndex]);
+  },3000);
+}
 
-    function resetRoulette() {
-      currentAngle = 0;
-      drawRoulette();
-    }
+button1.addEventListener('click',()=>{
+  button1.disabled=true;
+  spinWheel((char)=>{
+    result1.textContent=char;
+    button2.disabled=false;
+  });
+});
 
-    startBtn.addEventListener("click", spinRoulette);
-    resetBtn.addEventListener("click", resetRoulette);
+button2.addEventListener('click',()=>{
+  button2.disabled=true;
+  spinWheel((char)=>{
+    result2.textContent=char;
+  });
+});
 
-    drawRoulette();
-  </script>
+resetButton.addEventListener('click',()=>{
+  result1.textContent="1人目の結果";
+  result2.textContent="2人目の結果";
+  button1.disabled=false;
+  button2.disabled=true;
+  currentRotation=0;
+  wheel.style.transition='none';
+  wheel.style.transform='rotate(0deg)';
+});
+</script>
 </body>
 </html>
