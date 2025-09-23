@@ -4,18 +4,95 @@
 <meta charset="UTF-8">
 <title>ルーレット</title>
 <style>
-body { margin:0; font-family:sans-serif; background:#f0f0f0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; }
-h1 { font-size:2rem; margin:20px 0; text-align:center; }
-.main { display:flex; justify-content:center; align-items:flex-start; gap:40px; flex-wrap:wrap; width:100%; }
-.result-boxes { display:flex; flex-direction:column; gap:20px; flex-shrink:0; }
-.result-box { width:220px; font-size:1.3rem; padding:20px; background:#fff; border:2px solid #ccc; border-radius:10px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-.wheel-container { position:relative; width:90vw; max-width:450px; height:90vw; max-height:450px; flex-shrink:0; border:2px solid #333; border-radius:50%; }
-.pointer { position:absolute; top:-20px; left:50%; transform:translateX(-50%) rotate(180deg); font-size:1.5rem; color:#e53935; z-index:10; }
-svg { width:100%; height:100%; border-radius:50%; transform:rotate(0deg); transition: transform 3s cubic-bezier(0.25,0.8,0.25,1); }
-path { stroke-width:2; stroke:#333; }
-.controls { display:flex; flex-direction:column; gap:10px; margin-top:15px; align-items:center; }
-button { padding:10px 25px; font-size:1.2rem; background-color:#4caf50; color:white; border:none; border-radius:8px; cursor:pointer; }
-button:disabled { background-color:#aaa; cursor:not-allowed; }
+body {
+  margin:0;
+  font-family:sans-serif;
+  background:#f0f0f0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+}
+h1 {
+  font-size:2rem;
+  margin:20px 0;
+  text-align:center;
+}
+.main {
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:40px;
+  flex-wrap:wrap;
+  width:100%;
+}
+.result-boxes {
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+  flex-shrink:0;
+}
+.result-box {
+  width:220px;
+  font-size:1.3rem;
+  padding:20px;
+  background:#fff;
+  border:2px solid #ccc;
+  border-radius:10px;
+  text-align:center;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+.wheel-container {
+  position:relative;
+  width:90vw;
+  max-width:450px;
+  height:90vw;
+  max-height:450px;
+  flex-shrink:0;
+  border:2px solid #333;
+  border-radius:50%;
+}
+.pointer {
+  position:absolute;
+  top:-20px;
+  left:50%;
+  transform:translateX(-50%) rotate(180deg);
+  font-size:1.5rem;
+  color:#e53935;
+  z-index:10;
+}
+svg {
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  transform:rotate(0deg);
+  transition: transform 3s cubic-bezier(0.25,0.8,0.25,1);
+}
+path {
+  stroke-width:2;
+  stroke:#333;
+}
+.controls {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:15px;
+  align-items:center;
+}
+button {
+  padding:10px 25px;
+  font-size:1.2rem;
+  background-color:#4caf50;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+button:disabled {
+  background-color:#aaa;
+  cursor:not-allowed;
+}
 </style>
 </head>
 <body>
@@ -73,52 +150,60 @@ function getSecureRandom360(){
 }
 
 function randomColor(){
-  const r=Math.floor(Math.random()*256);
-  const g=Math.floor(Math.random()*256);
-  const b=Math.floor(Math.random()*256);
+  let r,g,b;
+  do {
+    r=Math.floor(Math.random()*256);
+    g=Math.floor(Math.random()*256);
+    b=Math.floor(Math.random()*256);
+  } while ((r<50 && g<50 && b<50) || (r>240 && g>240 && b>240) || (r<50 && g<50 && b>150)); // 黒・白・濃い青を除外
   return `rgb(${r},${g},${b})`;
 }
 
 const radius=200;
 const textRadius=120;
 
-outcomes.forEach((name,index)=>{
-  const startAngle=segmentAngle*index;
-  const endAngle=startAngle+segmentAngle;
-  const x1=200+radius*Math.cos((startAngle-90)*Math.PI/180);
-  const y1=200+radius*Math.sin((startAngle-90)*Math.PI/180);
-  const x2=200+radius*Math.cos((endAngle-90)*Math.PI/180);
-  const y2=200+radius*Math.sin((endAngle-90)*Math.PI/180);
-  const color=randomColor();
+function createWheel(){
+  segments.innerHTML="";
+  outcomes.forEach((name,index)=>{
+    const startAngle=segmentAngle*index;
+    const endAngle=startAngle+segmentAngle;
+    const x1=200+radius*Math.cos((startAngle-90)*Math.PI/180);
+    const y1=200+radius*Math.sin((startAngle-90)*Math.PI/180);
+    const x2=200+radius*Math.cos((endAngle-90)*Math.PI/180);
+    const y2=200+radius*Math.sin((endAngle-90)*Math.PI/180);
+    const color=randomColor();
 
-  const path=document.createElementNS("http://www.w3.org/2000/svg","path");
-  path.setAttribute("d", `M200,200 L${x1},${y1} A${radius},${radius} 0 0,1 ${x2},${y2} Z`);
-  path.setAttribute("fill",color);
-  path.setAttribute("stroke","#333");
-  path.setAttribute("stroke-width","2");
-  segments.appendChild(path);
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d",`M200,200 L${x1},${y1} A${radius},${radius} 0 0,1 ${x2},${y2} Z`);
+    path.setAttribute("fill",color);
+    path.setAttribute("stroke","#333");
+    path.setAttribute("stroke-width","2");
+    segments.appendChild(path);
 
-  const textAngle=(startAngle+endAngle)/2-90;
-  const textX=200+textRadius*Math.cos(textAngle*Math.PI/180);
-  const textY=200+textRadius*Math.sin(textAngle*Math.PI/180);
+    const textAngle=(startAngle+endAngle)/2-90;
+    const textX=200+textRadius*Math.cos(textAngle*Math.PI/180);
+    const textY=200+textRadius*Math.sin(textAngle*Math.PI/180);
 
-  const text=document.createElementNS("http://www.w3.org/2000/svg","text");
-  text.setAttribute("x",textX);
-  text.setAttribute("y",textY);
-  text.setAttribute("font-size","10");
-  text.setAttribute("text-anchor","middle");
-  text.setAttribute("alignment-baseline","middle");
-  text.setAttribute("fill","#000");
-  text.textContent=name;
-  text.setAttribute("transform", `rotate(${textAngle},${textX},${textY})`);
-  segments.appendChild(text);
-});
+    const text=document.createElementNS("http://www.w3.org/2000/svg","text");
+    text.setAttribute("x",textX);
+    text.setAttribute("y",textY);
+    text.setAttribute("font-size","10");
+    text.setAttribute("text-anchor","middle");
+    text.setAttribute("alignment-baseline","middle");
+    text.setAttribute("fill","#000");
+    text.textContent=name;
+    text.setAttribute("transform",`rotate(${textAngle},${textX},${textY})`);
+    segments.appendChild(text);
+  });
+}
+
+createWheel();
 
 function spinWheel(callback){
   const spin=360*5+getSecureRandom360();
   currentRotation+=spin;
   wheel.style.transition='transform 3s cubic-bezier(0.25,0.8,0.25,1)';
-  wheel.style.transform = `rotate(${currentRotation}deg)`;
+  wheel.style.transform=`rotate(${currentRotation}deg)`;
   
   setTimeout(()=>{
     const selectedIndex=Math.floor((360-(currentRotation%360))/segmentAngle)%outcomes.length;
@@ -149,9 +234,10 @@ resetButton.addEventListener('click',()=>{
   result2.textContent="2人目の結果";
   button1.disabled=false;
   button2.disabled=true;
-  currentRotation=0;
+  currentRotation = getSecureRandom360(); // リセット時の開始角度をランダムに
   wheel.style.transition='none';
-  wheel.style.transform='rotate(0deg)';
+  wheel.style.transform=`rotate(${currentRotation}deg)`;
+  createWheel(); // セグメントの色もリフレッシュ
 });
 </script>
 </body>
